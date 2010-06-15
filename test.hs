@@ -1,3 +1,4 @@
+data Cell a = Cell (Integer,Integer,Integer)
 create_empty 0 res = res
 create_empty n res = create_empty (n-1) ([]:res)
 
