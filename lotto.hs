@@ -8,9 +8,9 @@ get_colliding table = (horizontally table [], vertically table) where
                 let (same,rest) = sameRest x xs ([],[]) in
                 aux rest (same:res) where
                     sameRest _ [] res = res
-                    sameRest x@(a,_,_) ((y@(b,_,_)):rest) res
-                        | a == b    = sameRest x rest (y:res)
-                        | otherwise = sameRest x rest res
+                    sameRest x@(a,_,_) ((y@(b,_,_)):tail) (same,rest)
+                        | a == b    = sameRest x tail (y:same,rest)
+                        | otherwise = sameRest x tail (same,y:rest) 
     vertically matrix@(row:rows) =
         let empty = take (length row) (repeat [])
             transposed = transpose matrix empty in
