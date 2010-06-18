@@ -1,22 +1,15 @@
-data Cell a = Cell (Integer,Integer,Integer)
-create_empty 0 res = res
-create_empty n res = create_empty (n-1) ([]:res)
+data Cell a = Cell (Integer,Integer,Integer) deriving Show
 
-transpose :: [[Integer]] -> [[Integer]] -> [[Integer]]
-transpose [] result = result
-transpose (row:rows) result = 
-    let result1 = throw row result
-        transposed = reverse_all $ transpose rows result1 in
-        transposed where
-            throw :: [Integer] -> [[Integer]] -> [[Integer]]
-            throw [] result = []
-            throw (x:xs) (y:ys) = let rest = throw xs ys in
-                                  (x:y):rest
-            reverse_all [] = []
-            reverse_all (row:rows) = let row_r = reverse row
-                                         rest = reverse_all rows
-                                     in row_r:rest
+same val row = filter collide row where
+    collide val1 = val == val1
+rest val row = filter (dontCollide) row where
+    dontCollide val1 = val /= val1
 
+create_matrix [] _ result = result
+create_matrix (row:rows) n result = 
+    create_matrix rows (n+1) ((reverse(create_row row n 0 [])):result)
+create_row [] _ _ result = result
+create_row (val:vals) n m result = create_row vals n (m+1) ((Cell (val,n,m)):result)
 
-matrix = [[1,2,3],[4,5,6],[7,8,9]]
-dupa = transpose matrix (create_empty 3 [])
+table = [[1,2,1],[4,3,2],[2,2,3]]
+test = reverse $ create_matrix table 0 []
