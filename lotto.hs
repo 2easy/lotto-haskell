@@ -14,8 +14,8 @@ data Task = Task {
         board :: [[Int]]
      }
 --Returns colliding values on the given board
-getColliding :: [Row] -> ([[[Cell]]],[[[Cell]]])
-getColliding table = (horizontally table, vertically table) where
+getColliding :: [Row] -> [[Cell]]
+getColliding table = (horizontally table) ++ (vertically table) where
     horizontally matrix = filter (not.null) $ map (processRow []) matrix
     vertically matrix = horizontally $ transpose matrix 
 
@@ -29,7 +29,7 @@ processRow result row =
     let options = same (head row) (tail row)
         row_rest = rest (head row) (tail row) in
     if null options then processRow result row_rest
-    else processRow (((head row):options):result) row_rest 
+    else processRow (((head row):options) ++ result) row_rest 
 
 same ((val,_,_)) row = [ cell | cell@(val1,_,_) <- row, val1 == val ]
 rest ((val,_,_)) row = [ cell | cell@(val1,_,_) <- row, val1 /= val ]
