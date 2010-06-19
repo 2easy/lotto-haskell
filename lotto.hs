@@ -1,21 +1,18 @@
-module Lotto (Cell, Row, Generator, BlackCoords, Task(..)) where
+module Main where
 
-import Monad
+import Char
+import Control.Monad
 import List ((\\), delete)
+import System( getArgs )
 
 type Generator a = [a]
-
-type Cell = (Int,Int,Int)
-type BlackCoords = (Int, Int)
+type Cell = (Integer,Integer,Integer)
+type BlackCoords = (Integer, Integer)
 type Row = [Cell]
 
-data Task = Task {
-        size  :: Int,
-        board :: [[Int]]
-     }
 --Returns colliding values on the given board
-getColliding :: [Row] -> [[Cell]]
-getColliding table = (horizontally table) ++ (vertically table) where
+getColliding :: [Row] -> IO [[Cell]]
+getColliding table = return $ (horizontally table) ++ (vertically table) where
     horizontally matrix = filter (not.null) $ map (processRow []) matrix
     vertically matrix = horizontally $ transpose matrix 
 
@@ -41,11 +38,32 @@ createRow [] _ _ result = result
 createRow (val:vals) n m result = createRow vals n (m+1) (((val,n,m)):result)
 
 table = [[1,1],[2,1]]
+table1 = [[1,2,1],[4,3,2],[2,2,3]]
 check = 
     getColliding (reverse $ createMatrix table 0 [])
 --------------------------------------------------------------------
-
+parse :: String -> IO (Integer,[[Integer]])
+parse content = 
+    let [sizeStr, boardStr] = 
+            words $ map 
+                        (\c -> if c == '.' then ' ' else c) 
+                        (filter (not.isSpace) content) in
+    return (read sizeStr, read boardStr::[[Integer]])
 --------------------------------------------------------------------
+writeAll :: [String] -> IO ()
+writeAll [] = return ()
+writeAll (x:xs) = do
+    putStrLn x 
+    putStr "next: "
+    writeAll xs
 solve :: Task -> Generator BlackCoords
 solve task = do
     [(1,2)]
+main = do
+    [file_name] <- getArgs 
+    content <- readFile file_name
+    (size,board) <- parse content
+    cells <- getColliding (reverse $ createMatrix board 0 [])
+    putStrLn $ show cells
+    putStrLn $ show size
+    putStrLn $ show board

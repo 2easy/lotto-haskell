@@ -1,3 +1,4 @@
+import System (getArgs)
 data Cell a = Cell (Integer,Integer,Integer) deriving Show
 
 same val row = filter collide row where
@@ -11,5 +12,11 @@ create_matrix (row:rows) n result =
 create_row [] _ _ result = result
 create_row (val:vals) n m result = create_row vals n (m+1) ((Cell (val,n,m)):result)
 
+table :: [[Integer]]
 table = [[1,2,1],[4,3,2],[2,2,3]]
 test = reverse $ create_matrix table 0 []
+
+main = do
+    [x] <- getArgs 
+    a <- readFile x
+    putStrLn a
