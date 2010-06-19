@@ -1,4 +1,4 @@
-module Lotto (Cell, Row, Generator, Task(..)) where
+module Lotto (Cell, Row, Generator, BlackCoords, Task(..)) where
 
 import Monad
 import List ((\\), delete)
@@ -44,7 +44,8 @@ table = [[1,1],[2,1]]
 check = 
     getColliding (reverse $ createMatrix table 0 [])
 --------------------------------------------------------------------
+
+--------------------------------------------------------------------
 solve :: Task -> Generator BlackCoords
-solve task = 
-    let x = size task in
+solve task = do
     [(1,2)]
