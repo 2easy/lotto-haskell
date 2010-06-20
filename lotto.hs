@@ -45,15 +45,17 @@ writeAll (x:xs) = do
     putStr "next: "
     writeAll xs
 --------------------------------------------------------------------
-decide :: [[Cell]] -> [Cell] -> Generator [Cell]
-decide [] black = return black
-decide (choice:rest) black = do
-    white <- choice
-    let newBlack = delete white choice
+decide :: [[Cell]] -> [Cell] -> [Cell] -> Generator [Cell]
+decide [] black white = return black
+decide (choice:rest) black white = do
+    whiteCell <- choice
+    let newBlack = delete whiteCell choice
     guard $ not (neighbour newBlack black)
     let black' = newBlack ++ black
-        rest' = map (\\ black') rest
-    decide rest' black'
+        white' = white \\ newBlack
+    guard $ bfs ([head white']) (tail white')
+    let rest' = map (\\ black') rest
+    decide rest' black' white'
 
 neighbour :: [Cell] -> [Cell] -> Bool 
 neighbour [] _ = False
@@ -64,13 +66,32 @@ isNei x@(_,n,m) ((_,n',m'):ys) =
        ((m == m'-1 || m == m'+1) && n == n')
     then True
     else isNei x ys
+----------------------------BFS-------------------------------
+bfs :: [Cell] -> [Cell] -> Bool
+bfs _  []    = True
+bfs [] (y:_) = False
+bfs (black:grey) white = do
+    let newGrey = whiteNeighbours black white []
+        white' = white \\ newGrey
+        grey' = grey ++ newGrey
+    bfs grey' white'
+
+whiteNeighbours :: Cell -> [Cell] -> [Cell] -> [Cell]
+whiteNeighbours _ [] result = result
+whiteNeighbours black@(_,n,m) ((y@(_,n',m')):ys) result = 
+    if ((n == n'-1 || n == n'+1) && m == m') ||
+       ((m == m'-1 || m == m'+1) && n == n')
+    then whiteNeighbours black ys (y:result)
+    else whiteNeighbours black ys result
 -----------------------------------------------------------------------------
 main = do
     [file_name]  <- getArgs 
     content      <- readFile file_name
     (size,board) <- parse content
-    options      <- getColliding (reverse $ createMatrix board 0 [])
-    black        <- return $ decide options []
-    putStrLn $ show options
-    putStrLn $ show size
-    putStrLn $ show board
+    let cells = reverse $ createMatrix board 0 []
+    options      <- getColliding cells
+    black        <- return $ decide options [] (foldl (++) [] cells)
+    putStrLn $ "Size: " ++ (show size)
+    putStrLn $ "Board: " ++ (show board)
+    putStrLn $ "Options: " ++ (show options)
+    putStrLn $ "Blacked: " ++ (show black)
