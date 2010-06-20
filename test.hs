@@ -1,22 +1,22 @@
+import List
 import System (getArgs)
-data Cell a = Cell (Integer,Integer,Integer) deriving Show
+import Control.Monad
 
-same val row = filter collide row where
-    collide val1 = val == val1
-rest val row = filter (dontCollide) row where
-    dontCollide val1 = val /= val1
-
-create_matrix [] _ result = result
-create_matrix (row:rows) n result = 
-    create_matrix rows (n+1) ((reverse(create_row row n 0 [])):result)
-create_row [] _ _ result = result
-create_row (val:vals) n m result = create_row vals n (m+1) ((Cell (val,n,m)):result)
-
-table :: [[Integer]]
-table = [[1,2,1],[4,3,2],[2,2,3]]
-test = reverse $ create_matrix table 0 []
+type Cell = (Integer,Integer,Integer)
+type Generator a = [a]
 
 main = do
     [x] <- getArgs 
     a <- readFile x
     putStrLn a
+
+--decide :: [[Cell]] -> [Cell] -> Generator [Cell]
+decide [] black = return black
+decide (choice:rest) black = do
+    white <- choice
+    let black' = (delete white choice) ++ black
+        rest' = map (\\ black') rest
+    decide rest' black'
+
+check = decide [[(1,0,0),(1,0,2)],[(2,2,0),(2,2,1)],[(2,0,1),(2,2,1)]] []
+check1 = decide [[1,2],[3,4]] []
