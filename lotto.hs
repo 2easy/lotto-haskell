@@ -46,8 +46,8 @@ writeAll (x:xs) = do
     writeAll xs
 --------------------------------------------------------------------
 decide :: [[Cell]] -> [Cell] -> [Cell] -> Generator [Cell]
-decide [] black white = return black
-decide (choice:rest) black white = do
+decide [] white black = return black
+decide (choice:rest) white black = do
     whiteCell <- choice
     let newBlack = delete whiteCell choice
     guard $ not (neighbour newBlack black)
@@ -55,7 +55,7 @@ decide (choice:rest) black white = do
         white' = white \\ newBlack
     guard $ bfs ([head white']) (tail white')
     let rest' = map (\\ black') rest
-    decide rest' black' white'
+    decide rest' white' black' 
 
 neighbour :: [Cell] -> [Cell] -> Bool 
 neighbour [] _ = False
@@ -90,7 +90,7 @@ main = do
     (size,board) <- parse content
     let cells = reverse $ createMatrix board 0 []
     options      <- getColliding cells
-    black        <- return $ decide options [] (foldl (++) [] cells)
+    black        <- return $ decide options (foldl (++) [] cells) []
     putStrLn $ "Size: " ++ (show size)
     putStrLn $ "Board: " ++ (show board)
     putStrLn $ "Options: " ++ (show options)
