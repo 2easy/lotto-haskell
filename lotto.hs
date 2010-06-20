@@ -45,12 +45,32 @@ writeAll (x:xs) = do
     putStr "next: "
     writeAll xs
 --------------------------------------------------------------------
+decide :: [[Cell]] -> [Cell] -> Generator [Cell]
+decide [] black = return black
+decide (choice:rest) black = do
+    white <- choice
+    let newBlack = delete white choice
+    guard $ not (neighbour newBlack black)
+    let black' = newBlack ++ black
+        rest' = map (\\ black') rest
+    decide rest' black'
+
+neighbour :: [Cell] -> [Cell] -> Bool 
+neighbour [] _ = False
+neighbour (x:xs) black = if isNei x black then True else neighbour xs black
+isNei _ [] = False
+isNei x@(_,n,m) ((_,n',m'):ys) =
+    if ((n == n'-1 || n == n'+1) && m == m') ||
+       ((m == m'-1 || m == m'+1) && n == n')
+    then True
+    else isNei x ys
+-----------------------------------------------------------------------------
 main = do
     [file_name]  <- getArgs 
     content      <- readFile file_name
     (size,board) <- parse content
     options      <- getColliding (reverse $ createMatrix board 0 [])
---    black        <- decide options []
+    black        <- return $ decide options []
     putStrLn $ show options
     putStrLn $ show size
     putStrLn $ show board
