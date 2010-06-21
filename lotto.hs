@@ -1,8 +1,24 @@
+-- Solution to assignment no. 3 'Lotto'
+-- ghci
+-- Usage:
+--       ./lotto data_file
+-- data_file: 
+--       BoardSize. :: Int
+--       Board.     :: [[Int]]
+-- where
+--       BoardSize = 1 .. 16
+--       Board = [[val11, ..., val1N],
+--                [val12, ..., val2N],
+--                ...
+--                [valN1, ..., valNN]] 
+--       where
+--           valNM = 1 .. BoardSize
+----------------------------------------------------
 module Main where
 
 import Char
 import Control.Monad
-import List --((\\), delete, transpose)
+import List
 import System( getArgs )
 
 type Generator a = [a]
@@ -14,8 +30,8 @@ type BlackCoords = (Integer, Integer)
 (?>?) :: Cell -> Cell -> Ordering
 (?>?) (a,_,_) (b,_,_) = if a > b then GT else LT
 -- Returns colliding values on the given board
-getColliding :: [Row] -> IO [[Cell]]
-getColliding board = return $ (horizontally board) ++ (vertically board) where
+getColliding :: [Row] -> [[Cell]]
+getColliding board = (horizontally board) ++ (vertically board) where
     horizontally matrix = foldl (++) [] (map processRow matrix)
     vertically matrix = horizontally $ transpose matrix 
 -- Returns colliding values in the given row
@@ -38,34 +54,26 @@ parse content =
                         (filter (not.isSpace) content) in
     return (read sizeStr, read boardStr::[[Integer]])
 --------------------------------------------------------------------
-writeAll :: [String] -> IO ()
-writeAll [] = return ()
-writeAll (x:xs) = do
-    putStrLn x 
-    putStr "next: "
-    writeAll xs
---------------------------------------------------------------------
 decide :: [[Cell]] -> [Cell] -> [Cell] -> Generator [Cell]
-decide [] white black = return black
+decide [] _ black = return black
+decide ([]:rest) white black = decide rest white black
 decide (choice:rest) white black = do
     whiteCell <- choice
     let newBlack = delete whiteCell choice
-    guard $ not (neighbour newBlack black)
-    let black' = newBlack ++ black
+        black' = newBlack ++ black
         white' = white \\ newBlack
-    guard $ bfs ([head white']) (tail white')
-    let rest' = map (\\ black') rest
-    decide rest' white' black' 
+        rest'  = map (\\ black') rest
+    guard (not (neighbour newBlack black) && 
+           not (neighbour newBlack newBlack)
+          ) 
+    guard (bfs ([head white']) (tail white'))
+    decide rest' white' black'
 
 neighbour :: [Cell] -> [Cell] -> Bool 
-neighbour [] _ = False
-neighbour (x:xs) black = if isNei x black then True else neighbour xs black
-isNei _ [] = False
-isNei x@(_,n,m) ((_,n',m'):ys) =
-    if ((n == n'-1 || n == n'+1) && m == m') ||
-       ((m == m'-1 || m == m'+1) && n == n')
-    then True
-    else isNei x ys
+neighbour candidates black = any ((flip isNei) black) candidates 
+isNei (_,n,m) ys = any neiCoords ys where
+    neiCoords (_,n',m') = ((n == n'-1 || n == n'+1) && m == m') ||
+                          ((m == m'-1 || m == m'+1) && n == n') 
 ----------------------------BFS-------------------------------
 bfs :: [Cell] -> [Cell] -> Bool
 bfs _  []    = True
@@ -83,15 +91,54 @@ whiteNeighbours black@(_,n,m) ((y@(_,n',m')):ys) result =
        ((m == m'-1 || m == m'+1) && n == n')
     then whiteNeighbours black ys (y:result)
     else whiteNeighbours black ys result
------------------------------------------------------------------------------
+------------------------------------------------------------------
+solve :: [[Integer]] -> Generator [Cell]
+solve board = do
+    let matrix     = reverse $ createMatrix board 0 []
+        options    = getColliding matrix
+        allCells   = foldl (++) [] matrix
+    blackCells <- decide options allCells []
+    [blackCells]
+------------------------------------------------------------------
+subsets :: [Cell] -> Generator [Cell]
+subsets [] = [[]]
+subsets (x:xs) = subsets xs ++ (map (addNotNei x) (subsets xs)) where
+    addNotNei x subset = 
+        if isNei x subset then []
+        else x:subset            
+-------------------------Print-------------------------------------
+ripAll :: Generator [Cell] -> Generator [BlackCoords]
+
+ripAll = map ripVal
+
+ripVal :: [Cell] -> [BlackCoords]
+ripVal cells = map (\(_,n,m) -> (n,m)) cells
+makePrintable [] result = result
+makePrintable (row:rows) result =
+    makePrintable rows ((map (\(val,a,b) -> 
+                                 if val > 10 then (show val,a,b) 
+                                 else (" " ++ (show val),a,b))
+                             row) : result)
+printAll :: [[(String,Integer,Integer)]] -> Generator [BlackCoords] -> IO ()
+printAll matrix [] = return ()
+printAll matrix (x:xs) =
+    (myPrint matrix x) >>
+    putStrLn "" >>
+    printAll matrix xs
+myPrint :: [[(String,Integer,Integer)]] -> [BlackCoords] -> IO ()
+myPrint [] _ = return ()
+myPrint (row:rows) black = do
+    printRow row black
+    myPrint rows black
+printRow [] _ = putStrLn ""
+printRow ((sVal,n,m):cells) black =
+    (if ((n,m) `elem` black) then (putStr " #") 
+    else (putStr sVal)) >>
+    printRow cells black
+---------------Main--------------------
 main = do
-    [file_name]  <- getArgs 
-    content      <- readFile file_name
-    (size,board) <- parse content
-    let cells = reverse $ createMatrix board 0 []
-    options      <- getColliding cells
-    black        <- return $ decide options (foldl (++) [] cells) []
-    putStrLn $ "Size: " ++ (show size)
-    putStrLn $ "Board: " ++ (show board)
-    putStrLn $ "Options: " ++ (show options)
-    putStrLn $ "Blacked: " ++ (show black)
+    [file_name]   <- getArgs 
+    content       <- readFile file_name
+    (size,board)  <- parse content
+    solution      <- return $ ripAll (solve board)
+    printAll (makePrintable (createMatrix board 0 []) []) solution
